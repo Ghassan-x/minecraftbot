@@ -10,8 +10,8 @@ const MAX_RECONNECT_DELAY = 60000;
 const INITIAL_DELAY = 5000;
 
 const botConfig = {
-  host: 'Ghassan_x.aternos.me',
-  port: 17320,
+  host: 'Herocraftx.aternos.me',
+  port: 48357,
   username: 'MinecraftBot',
   auth: 'offline',
   version: false
