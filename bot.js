@@ -10,7 +10,7 @@ const INITIAL_DELAY = 30000;
 const botConfig = {
   host: 'Herocraftx.aternos.me',
   port: 48357,
-  username: 'Player123',
+  username: 'MinecraftBot',
   auth: 'offline',
   version: false
 };
