@@ -9,61 +9,45 @@ const botConfig = {
   port: 48357,
   username: 'MinecraftBot',
   auth: 'offline',
-  version: false
+  version: '1.20.1',
+  keepAlive: true
 };
 
 function delayForAttempt(attempt) {
-  const base = 15000;
-  const max = 60000;
+  const base = 20000;
+  const max = 120000;
   return Math.min(base * Math.pow(2, attempt), max);
 }
 
-function clearBot() {
-  if (reconnectTimer) {
-    clearTimeout(reconnectTimer);
-    reconnectTimer = null;
-  }
-
-  try {
-    if (bot) bot.removeAllListeners();
-  } catch {}
-}
-
 function connect() {
-  clearBot();
-
   try {
     bot = mineflayer.createBot(botConfig);
-  } catch (err) {
+  } catch {
     scheduleReconnect();
     return;
   }
 
   bot.once('spawn', () => {
     reconnectAttempts = 0;
-    console.log('Bot spawned');
+    console.log('Bot joined');
   });
 
-  bot.on('kicked', (reason) => {
-    console.log('Kicked:', reason);
+  bot.on('kicked', () => {
     scheduleReconnect();
   });
 
   bot.on('end', () => {
-    console.log('Disconnected');
     scheduleReconnect();
   });
 
-  bot.on('error', (err) => {
-    console.log('Error:', err.message);
-  });
+  bot.on('error', () => {});
 }
 
 function scheduleReconnect() {
   if (reconnectTimer) return;
 
   const delay = delayForAttempt(reconnectAttempts);
-  reconnectAttempts += 1;
+  reconnectAttempts++;
 
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
@@ -71,5 +55,6 @@ function scheduleReconnect() {
   }, delay);
 }
 
-console.log('Starting bot...');
-connect();
+setTimeout(() => {
+  connect();
+}, 10000);
