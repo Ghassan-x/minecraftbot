@@ -1,11 +1,8 @@
 const mineflayer = require('mineflayer');
 
 let bot;
+let reconnectTimer = null;
 let reconnectAttempts = 0;
-let reconnectTimeout = null;
-
-const MAX_DELAY = 60000;
-const INITIAL_DELAY = 30000;
 
 const botConfig = {
   host: 'Herocraftx.aternos.me',
@@ -15,92 +12,64 @@ const botConfig = {
   version: false
 };
 
-function getDelay() {
-  return Math.min(INITIAL_DELAY * Math.pow(2, reconnectAttempts), MAX_DELAY);
+function delayForAttempt(attempt) {
+  const base = 15000;
+  const max = 60000;
+  return Math.min(base * Math.pow(2, attempt), max);
 }
 
-function createBot() {
-  console.log(`Connecting... Attempt ${reconnectAttempts + 1}`);
+function clearBot() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+
+  try {
+    if (bot) bot.removeAllListeners();
+  } catch {}
+}
+
+function connect() {
+  clearBot();
 
   try {
     bot = mineflayer.createBot(botConfig);
-    setupBot();
   } catch (err) {
-    console.log('Create error:', err.message);
-    reconnect();
+    scheduleReconnect();
+    return;
   }
-}
-
-function reconnect() {
-  if (reconnectTimeout) clearTimeout(reconnectTimeout);
-
-  const delay = getDelay();
-  reconnectAttempts++;
-
-  console.log(`Reconnecting in ${delay / 1000}s`);
-
-  reconnectTimeout = setTimeout(() => {
-    try {
-      if (bot) {
-        bot.removeAllListeners();
-        bot.quit();
-      }
-    } catch {}
-
-    createBot();
-  }, delay);
-}
-
-function setupBot() {
 
   bot.once('spawn', () => {
-    console.log('Bot joined');
     reconnectAttempts = 0;
-
-    // Anti AFK
-    setInterval(() => {
-      if (!bot.entity) return;
-
-      if (Math.random() < 0.5) {
-        bot.setControlState('jump', true);
-        setTimeout(() => bot.setControlState('jump', false), 200);
-      }
-
-    }, 40000);
-
-    // Look around
-    setInterval(() => {
-      if (!bot.entity) return;
-
-      const yaw = bot.entity.yaw + (Math.random() - 0.5);
-      bot.look(yaw, bot.entity.pitch);
-
-    }, 25000);
-
+    console.log('Bot spawned');
   });
 
   bot.on('kicked', (reason) => {
     console.log('Kicked:', reason);
-    reconnect();
+    scheduleReconnect();
   });
 
   bot.on('end', () => {
     console.log('Disconnected');
-    reconnect();
+    scheduleReconnect();
   });
 
   bot.on('error', (err) => {
     console.log('Error:', err.message);
   });
+}
 
-  bot.on('chat', (username, message) => {
-    if (username === bot.username) return;
+function scheduleReconnect() {
+  if (reconnectTimer) return;
 
-    if (message === 'hi') {
-      bot.chat('Hello');
-    }
-  });
+  const delay = delayForAttempt(reconnectAttempts);
+  reconnectAttempts += 1;
+
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    connect();
+  }, delay);
 }
 
 console.log('Starting bot...');
-createBot();
+connect();
