@@ -10,12 +10,13 @@ const botConfig = {
   username: 'MinecraftBot',
   auth: 'offline',
   version: '1.20.1',
-  keepAlive: true
+  keepAlive: true,
+  clientToken: 'fixed-minecraft-bot-token'
 };
 
-function delayForAttempt(attempt) {
-  const base = 20000;
-  const max = 120000;
+function getDelay(attempt) {
+  const base = 60000;
+  const max = 180000;
   return Math.min(base * Math.pow(2, attempt), max);
 }
 
@@ -32,11 +33,13 @@ function connect() {
     console.log('Bot joined');
   });
 
-  bot.on('kicked', () => {
+  bot.on('kicked', (reason) => {
+    console.log('Kicked:', reason);
     scheduleReconnect();
   });
 
   bot.on('end', () => {
+    console.log('Disconnected');
     scheduleReconnect();
   });
 
@@ -46,7 +49,7 @@ function connect() {
 function scheduleReconnect() {
   if (reconnectTimer) return;
 
-  const delay = delayForAttempt(reconnectAttempts);
+  const delay = getDelay(reconnectAttempts);
   reconnectAttempts++;
 
   reconnectTimer = setTimeout(() => {
@@ -57,4 +60,4 @@ function scheduleReconnect() {
 
 setTimeout(() => {
   connect();
-}, 10000);
+}, 15000);
